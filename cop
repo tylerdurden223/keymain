@@ -1,0 +1,1585 @@
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shovels = {}
+local OriginalShovelNames = {}
+
+local function AddComma(amount: number)
+	local formatted = amount
+	local k
+	while true do
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+		if (k==0) then
+			break
+		end
+	end
+	return formatted
+end
+
+for i,v in ReplicatedStorage.Settings.Items.Shovels:GetChildren() do
+	local Success, ItemInfo = pcall(require, v)
+
+	local BuyPrice = 0
+	
+	local NewName
+
+	if Success and ItemInfo then
+		if not ItemInfo.BuyPrice then
+			continue
+		end
+		
+		BuyPrice = ItemInfo.BuyPrice
+		
+		NewName = `{v.Name} (${AddComma(BuyPrice)})`
+	else
+		NewName = `{v.Name}`
+	end
+	
+	table.insert(Shovels, NewName)
+	OriginalShovelNames[NewName] = {
+		Name = v.Name,
+		BuyPrice = BuyPrice
+	}
+end
+
+
+
+
+table.sort(Shovels, function(a,b)
+	return OriginalShovelNames[a].BuyPrice < OriginalShovelNames[b].BuyPrice
+end)
+
+
+
+
+local CollectionService = game:GetService("CollectionService")
+
+local Player = game:GetService("Players").LocalPlayer
+
+local Network = ReplicatedStorage:WaitForChild("Source"):WaitForChild("Network")
+local RemoteFunctions: {[string]: RemoteFunction} = Network:WaitForChild("RemoteFunctions")
+local RemoteEvents: {[string]: RemoteEvent} = Network:WaitForChild("RemoteEvents")
+
+
+
+
+
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "NEOX HUB | Dig It | v1.2",
+    SubTitle = "by hassanxzayn",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = false,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+
+
+
+
+
+
+local Tabs = {
+    Home = Window:AddTab({ Title = "| Home", Icon = "rbxassetid://7733960981" }),
+    Main = Window:AddTab({ Title = "| Main", Icon = "rbxassetid://7743869612" }),
+    items = Window:AddTab({ Title = "| Items", Icon = "rbxassetid://7734056878" }),
+    Misc = Window:AddTab({ Title = "| Misc", Icon = "rbxassetid://7733789088" }),
+    Shop = Window:AddTab({ Title = "| Shop", Icon = "rbxassetid://7734056747" }),
+    Teleport = Window:AddTab({ Title = "| Teleport", Icon = "rbxassetid://7733992789" }),
+    Weather = Window:AddTab({ Title = "| Environment Settings", Icon = "rbxassetid://7734068495" }),
+    ESP = Window:AddTab({ Title = "| Esp", Icon = "rbxassetid://7743876054" }),
+}
+
+
+
+Window:SelectTab(1)
+
+
+Tabs.Home:AddButton({
+    Title = "Join our discord",
+    Description = "Click on this button to copy the invite link!",
+    Callback = function()
+        local inviteLink = "https://discord.gg/99UuEwM9sX"
+        
+        if setclipboard then
+            setclipboard(inviteLink)
+            print("bro coming to our discord yay!")
+        else
+            print("setclipboard function not available")
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Section = Tabs.Teleport:AddSection("Teleport To NPCS")
+
+
+
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local mapFolder = Workspace:FindFirstChild("Map") and Workspace.Map:FindFirstChild("Islands")
+if not mapFolder then
+    warn("Map > Islands folder not found!")
+    return
+end
+
+local teleportLocations = {}
+local npcNames = {}
+
+local function getCharacter()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+end
+
+local function processModels(islandFolder, modelNames)
+    for _, modelName in ipairs(modelNames) do
+        local model = islandFolder:FindFirstChild(modelName)
+        if model and model:IsA("Model") then
+            if model:FindFirstChild("HumanoidRootPart") then
+                teleportLocations[modelName] = model.HumanoidRootPart.Position
+                table.insert(npcNames, modelName) 
+                print("Processed model: " .. modelName)
+            else
+                warn("Model '" .. modelName .. "' does not have a HumanoidRootPart!")
+            end
+        else
+            warn("Model '" .. modelName .. "' not found in " .. islandFolder.Name)
+        end
+    end
+end
+
+
+local nookville = mapFolder:FindFirstChild("Nookville")
+if nookville then
+    print("Nookville folder found")
+    processModels(nookville, {
+        "Wizzy", "Agent", "Cooper", "Milton", "Balwin", "Margot",
+        "ShipDealer", "Scrubbucket", "Hobo", "Crook Dude", "Patricia", "Timy",
+        "Ronald", "Benson"  
+    })
+else
+    print("Nookville folder not found!")
+end
+
+local piratesburg = mapFolder:FindFirstChild("Piratesburg")
+if piratesburg then
+    print("Piratesburg folder found")
+    processModels(piratesburg, {
+        "Old Man", "CargoDude", "Blackbeard", "Arthur", "Knight",
+        "Booga", "Mr. Sandman" 
+    })
+else
+    print("Piratesburg folder not found!")
+end
+
+local greekTemple = mapFolder:FindFirstChild("Greek Temple")
+if greekTemple then
+    print("Greek Temple folder found")
+    processModels(greekTemple, {"Dominus Empyreus"})
+else
+    print("Greek Temple folder not found!")
+end
+
+local badlands = mapFolder:FindFirstChild("Badlands")
+if badlands then
+    print("Badlands folder found")
+    processModels(badlands, {"Mia", "Baller", "Waldo", "Flapjack"}) 
+else
+    print("Badlands folder not found!")
+end
+
+local lunarNewYear = mapFolder:FindFirstChild("Lunar New Year")
+if lunarNewYear then
+    print("Lunar New Year folder found")
+    processModels(lunarNewYear, {"Tai"}) 
+else
+    print("Lunar New Year folder not found!")
+end
+
+local permafrost = mapFolder:FindFirstChild("Permafrost")
+if permafrost then
+    print("Permafrost folder found")
+    processModels(permafrost, {"WomenElf", "Hobo Santa", "ElfMerchant", "Ice King", "Frank", "Rick", "ShipElf"})
+else
+    print("Permafrost folder not found!")
+end
+
+local Dropdown
+if Tabs and Tabs.Teleport then
+    Dropdown = Tabs.Teleport:AddDropdown("Dropdown", { 
+        Title = "Select NPC to Teleport",
+        Description = "",
+        Values = npcNames,
+        Multi = false,
+        Default = "None",
+        Callback = function(value)
+            selectedModel = value
+            print("Selected Model:", selectedModel)
+        end
+    })
+else
+    warn("Tabs.Teleport is not initialized or accessible!")
+end
+
+local function teleportToModel()
+    if selectedModel and selectedModel ~= "None" then
+        local targetPosition = teleportLocations[selectedModel]
+        if targetPosition then
+            local character = getCharacter()
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                character.HumanoidRootPart.CFrame = CFrame.new(targetPosition + Vector3.new(0, 5, 0))
+                print("Teleported to " .. selectedModel)
+            else
+                warn("HumanoidRootPart not found!")
+            end
+        else
+            warn("No position data found for the selected model!")
+        end
+    else
+        warn("No valid model selected!")
+    end
+end
+
+if Tabs and Tabs.Teleport then
+    Tabs.Teleport:AddButton({ 
+        Title = "Teleport", 
+        Description = "",
+        Callback = function()
+            teleportToModel()
+        end
+    })
+else
+    warn("Tabs.Teleport is not accessible!")
+end
+
+
+
+
+
+local Toggle = Tabs.ESP:AddToggle("AllESP", {
+    Title = "NPC Esp",
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        local function addESP(model)
+            if model:IsA("Model") then
+                local highlight = Instance.new("Highlight")
+                highlight.Parent = model
+                highlight.Adornee = model
+                highlight.FillColor = Color3.fromRGB(0, 255, 0)
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+
+local headPart = model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart")
+if headPart then
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Parent = headPart
+    billboardGui.Adornee = headPart
+    billboardGui.Size = UDim2.new(40, 0, 1, 0)
+    billboardGui.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboardGui.AlwaysOnTop = true
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Parent = billboardGui
+    textLabel.Size = UDim2.new(1, 0, 2, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = model.Name
+    textLabel.TextColor3 = Color3.fromRGB(255, 0, 0) 
+    textLabel.TextStrokeTransparency = 0
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextScaled = true 
+    textLabel.TextSize = 80 
+end
+            end
+        end
+
+        local function removeESP(model)
+            if model:IsA("Model") then
+                local highlight = model:FindFirstChildOfClass("Highlight")
+                if highlight then
+                    highlight:Destroy()
+                end
+
+                local headPart = model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart")
+                if headPart then
+                    local billboardGui = headPart:FindFirstChildOfClass("BillboardGui")
+                    if billboardGui then
+                        billboardGui:Destroy()
+                    end
+                end
+            end
+        end
+
+        local function processModels(folder, modelNames)
+            if folder then
+                for _, modelName in ipairs(modelNames) do
+                    local model = folder:FindFirstChild(modelName)
+                    if model then
+                        print("Found model: " .. modelName)  
+                        if state then addESP(model) else removeESP(model) end
+                    else
+                        print("Model not found: " .. modelName) 
+                    end
+                end
+            else
+                print("Folder not found!")
+            end
+        end
+
+        local mapFolder = game.Workspace:FindFirstChild("Map") and game.Workspace.Map:FindFirstChild("Islands")
+        if not mapFolder then
+            warn("Map > Islands folder not found!")
+            return
+        end
+
+        print("Starting ESP for all models")
+
+        local nookville = mapFolder:FindFirstChild("Nookville")
+        if nookville then
+            print("Nookville folder found")
+            processModels(nookville, {
+                "Wizzy", "Agent", "Cooper", "Milton", "Balwin", "Margot",
+                "ShipDealer", "Scrubbucket", "Hobo", "Crook Dude", "Patricia", "Timy",
+                "Ronald", "Benson" 
+            })
+        else
+            print("Nookville folder not found!")
+        end
+
+        local piratesburg = mapFolder:FindFirstChild("Piratesburg")
+        if piratesburg then
+            print("Piratesburg folder found")
+            processModels(piratesburg, {
+                "Old Man", "CargoDude", "Blackbeard", "Arthur", "Knight",
+                "Booga", "Mr. Sandman" 
+            })
+        else
+            print("Piratesburg folder not found!")
+        end
+
+        local greekTemple = mapFolder:FindFirstChild("Greek Temple")
+        if greekTemple then
+            print("Greek Temple folder found")
+            processModels(greekTemple, {"Dominus Empyreus"})
+        else
+            print("Greek Temple folder not found!")
+        end
+
+        local badlands = mapFolder:FindFirstChild("Badlands")
+        if badlands then
+            print("Badlands folder found")
+            processModels(badlands, {"Mia", "Baller", "Waldo", "Flapjack"})  
+        else
+            print("Badlands folder not found!")
+        end
+
+        local lunarNewYear = mapFolder:FindFirstChild("Lunar New Year")
+        if lunarNewYear then
+            print("Lunar New Year folder found")
+            processModels(lunarNewYear, {"Tai"}) 
+        else
+            print("Lunar New Year folder not found!")
+        end
+
+
+                local permafrost = mapFolder:FindFirstChild("Permafrost")
+                if permafrost then
+                    print("Permafrost folder found")
+                    processModels(permafrost, {"WomenElf", "Hobo Santa", "ElfMerchant", "Ice King", "Ice King", "Frank", "Rick", "ShipElf"}) 
+                else
+                    print("Permafrost folder not found!")
+                end
+
+
+        print(state and "ESP Enabled for all models" or "ESP Disabled for all models")
+    end
+})
+
+
+
+
+
+
+
+local RunService = game:GetService("RunService")
+
+local DayOnlyLoop
+
+local DayToggle = Tabs.Weather:AddToggle("Only Day",  
+{
+    Title = "Only Day",  
+    Description = "", 
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            DayOnlyLoop = RunService.Heartbeat:Connect(function()
+                game:GetService("Lighting").TimeOfDay = "12:00:00"
+            end)
+        else
+            if DayOnlyLoop then
+                DayOnlyLoop:Disconnect()
+                DayOnlyLoop = nil
+            end
+        end
+    end
+})
+
+
+local NightOnlyLoop
+
+local NightToggle = Tabs.Weather:AddToggle("Only Night",  
+{
+    Title = "Only Night",  
+    Description = "", 
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            NightOnlyLoop = RunService.Heartbeat:Connect(function()
+                game:GetService("Lighting").TimeOfDay = "22:00:00"
+            end)
+        else
+            if NightOnlyLoop then
+                NightOnlyLoop:Disconnect()
+                NightOnlyLoop = nil
+            end
+        end
+    end
+})
+
+
+
+
+local removefogToggle = Tabs.Weather:AddToggle("Remove Fog",  
+{
+    Title = "Remove Fog",  
+    Description = "",  
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            local sky = game:GetService("Lighting"):FindFirstChild("Sky")
+            if sky then
+                sky.Parent = game:GetService("Lighting").Bloom
+            end
+        else
+            local skyInBloom = game:GetService("Lighting").Bloom:FindFirstChild("Sky")
+            if skyInBloom then
+                skyInBloom.Parent = game:GetService("Lighting")
+            end
+        end
+    end
+})
+
+
+
+
+
+
+
+Tabs.items:AddButton({
+    Title = "Redeem Known Codes",
+    Description = "",
+    Callback = function()
+        local Codes = {
+            "PLSMOLE",
+            "LUNARV2",
+            "TWITTER_DIGITRBLX",
+            "5MILLION",
+            "SECRET",
+            "300KLIKES",
+            "12MVISITS",
+            "ROYAL_SECRET",
+        }
+
+        for _, Code: string in Codes do
+            local Result = RemoteFunctions.Codes:InvokeServer({
+                Command = "Redeem",
+                Code = Code
+            })
+
+            if Result.Status then
+                continue
+            elseif Result.AlreadyRedeemed then
+                Fluent:Notify({
+                    Title = "NEOX HUB",
+                    Content = "Failed",
+                    SubContent = "The code '" .. Code .. "' has already been redeemed",
+                    Duration = 5
+                })
+            elseif Result.NotValid then
+                Fluent:Notify({
+                    Title = "NEOX HUB",
+                    Content = "Failed",
+                    SubContent = "The code '" .. Code .. "' is not valid anymore.",
+                    Duration = 5
+                })
+            else
+                Fluent:Notify({
+                    Title = "NEOX HUB",
+                    Content = "Failed",
+                    SubContent = "The code '" .. Code .. "' has had an internal error while redeeming.",
+                    Duration = 5
+                })
+            end
+        end
+    end,
+})
+
+
+
+
+
+
+
+
+local Treasures = ReplicatedStorage.Settings.Items.Treasures
+
+local ContainerNames = {
+	"Chest",
+	"Loot Bag",
+	"Crate",
+	"Magnet Box",
+	"Strange Vase",
+	"Sparkle Flask",
+	"Gift of Labor",
+	"Gift of Voyage",
+	"Gift of Elves",
+	"Frozen Container",
+	"Pinata Box",
+	"Frozen Magnet Box",
+	"Piggy Bank",
+	"Benson's Present",
+	"Benson's Royal Crate",
+	"Benson's Safe",
+	"Benson's Box",
+	"Gift of Dragons",
+	"Gift of Abundance",
+	"Gift of Fortune",
+}
+
+Flags = Flags or {}
+Flags.OpenContainers = false
+
+local function OpenContainer(Tool: Tool)
+	if not Flags.OpenContainers then
+		return 
+	end
+
+	if not RemoteEvents or not RemoteEvents.Treasure then
+		warn("RemoteEvents.Treasure is not defined!")
+		return
+	end
+
+	local Module: ModuleScript? = Treasures:FindFirstChild(Tool.Name)
+	if not Module and not table.find(ContainerNames, Tool.Name) then
+		return 
+	end
+
+	task.wait(0.5)
+	RemoteEvents.Treasure:FireServer({
+		Command = "RedeemContainer",
+		Container = Tool,
+	})
+end
+
+local Toggle = Tabs.items:AddToggle("AutoOpenContainers", {
+	Title = "Auto Open Containers",
+	Description = "",
+	Default = false,
+	Flag = "OpenContainers", 
+	Callback = function(Value)
+		Flags.OpenContainers = Value
+
+		if Value then
+			for _, Tool: Tool in Player.Backpack:GetChildren() do
+				OpenContainer(Tool)
+			end
+
+			Player.Backpack.ChildAdded:Connect(function(Tool)
+				if Flags.OpenContainers then
+					OpenContainer(Tool)
+				end
+			end)
+		end
+	end,
+})
+
+
+
+Tabs.items:AddButton({ 
+    Title = "Get Mole Count",
+    Description = "",
+    Callback = function()
+        local Moles = 0
+        local RoyalMoles = 0
+
+        for _, v: Tool in Player.Backpack:GetChildren() do
+            if v.Name == "Mole" then
+                Moles += 1
+            elseif v.Name == "Royal Mole" then
+                RoyalMoles += 1
+            end
+        end
+
+        for _, v: ImageLabel in Player.PlayerGui.Main.Core.Inventory.Inventory.Slots:GetChildren() do
+            if not v:IsA("ImageLabel") then
+                continue
+            end
+
+            if v.Icon.Image == Icons.Mole then
+                Moles += 1
+            elseif v.Icon.Image == Icons.RoyalMole then
+                RoyalMoles += 1
+            end
+        end
+
+        Fluent:Notify({
+            Title = "Total Moles",
+            Content = `You have {Moles} Moles and {RoyalMoles} Royal Moles`,
+            Duration = 5
+        })
+    end,
+})
+
+
+
+
+
+
+
+local Section = Tabs.Teleport:AddSection("Teleport To Islands")
+
+
+local Islands = {}
+
+for i,v in workspace.Map.Islands:GetChildren() do
+    table.insert(Islands, v.Name)
+end
+
+for i,v in ReplicatedStorage.Assets.Sounds.Soundtrack.Locations:GetChildren() do
+    if v.Name == "Ocean" then
+        continue
+    end
+
+    if not table.find(Islands, v.Name) then
+        table.insert(Islands, v.Name)
+    end
+end
+
+table.sort(Islands)
+
+local Dropdown = Tabs.Teleport:AddDropdown("Dropdown", {
+    Title = "Teleport to Island",
+    Description = "",
+    Values = Islands,
+    Multi = false,
+    Default = nil,
+    Callback = function(CurrentOption)
+        if CurrentOption == "" then
+            return
+        end
+        
+        local Island = workspace.Map.Islands:FindFirstChild(CurrentOption)
+
+        if not Island then
+            return Fluent:Notify({
+                Title = "Neox Hub",
+                Content = "Error",
+                SubContent = "That island doesn't currently exist", 
+                Duration = 5 
+        })
+        end
+
+        if Island:FindFirstChild("LocationSpawn") then
+            Player.Character:PivotTo(Island.LocationSpawn.CFrame)
+        elseif Island:FindFirstChild("SpawnPoint") then
+            Player.Character:PivotTo(Island.SpawnPoint.CFrame)
+        elseif CurrentOption ~= "Badlands" then
+            Player.Character:PivotTo(Island:GetAttribute("Pivot"))
+        else
+            Player.Character:PivotTo(Island:GetAttribute("Pivot") + Vector3.yAxis * Island:GetAttribute("Size") / 2)
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Flags = {
+    Sell = {
+        CurrentValue = true 
+    }
+}
+
+local function GetInventorySize()
+    local Inventory: {[string]: {["Attributes"]: {["Weight"]: number}}} = RemoteFunctions.Player:InvokeServer({
+        Command = "GetInventory"
+    })
+
+    local InventorySize = 0
+
+    for ID, Object in Inventory do
+        InventorySize += 1
+    end
+
+    return InventorySize
+end
+
+local function SellInventory()
+    Player.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+    
+    local Merchant: Model
+    for _, v: TextLabel in workspace.Map.Islands:GetDescendants() do
+        if v.Name ~= "Title" or not v:IsA("TextLabel") or v.Text ~= "Merchant" then
+            continue
+        end
+        Merchant = v.Parent.Parent
+        break
+    end
+
+    if not Merchant then
+        warn("No merchant found in the map.")
+        return
+    end
+
+    local SellEnabled = Flags.Sell.CurrentValue
+    local PreviousPosition = Player.Character:GetPivot()
+    local PreviousSize = GetInventorySize()
+
+    local Teleported = false
+    local StartTime = tick()
+
+    repeat
+        Player.Character:PivotTo(Merchant:GetPivot())
+
+        RemoteEvents.Merchant:FireServer({
+            Command = "SellAllTreasures",
+            Merchant = Merchant
+        })
+
+        task.wait(0.1)
+        Teleported = true
+    until GetInventorySize() ~= PreviousSize or Flags.Sell.CurrentValue ~= SellEnabled or tick() - StartTime >= 3
+
+    if Teleported then
+        Player.Character:PivotTo(PreviousPosition)
+    end
+end
+
+Tabs.items:AddButton({
+    Title = "Quick Sell Inventory",
+    Description = "",
+    Callback = SellInventory
+})
+
+
+
+local Flags = Flags or {}  
+Flags.Sell = Flags.Sell or { CurrentValue = false } 
+
+local Toggle = Tabs.items:AddToggle("MyToggle", {
+    Title = "Auto Sell Inventory (When Backpack Full)",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        Flags.Sell.CurrentValue = Value
+
+        local function GetInventorySize()
+            local Inventory: {[string]: {["Attributes"]: {["Weight"]: number}}} = RemoteFunctions.Player:InvokeServer({
+                Command = "GetInventory"
+            })
+
+            local InventorySize = 0
+
+            for ID, Object in Inventory do
+                InventorySize += 1
+            end
+
+            return InventorySize
+        end
+
+        local function SellInventory()
+            Player.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            
+            local Merchant: Model
+
+            for _,v: TextLabel in workspace.Map.Islands:GetDescendants() do
+                if v.Name ~= "Title" or not v:IsA("TextLabel") or v.Text ~= "Merchant" then
+                    continue
+                end
+
+                Merchant = v.Parent.Parent
+                break
+            end
+            
+            local SellEnabled = Flags.Sell.CurrentValue
+            local PreviousPosition = Player.Character:GetPivot()
+            local PreviousSize = GetInventorySize()
+            
+            local Teleported = false
+            
+            local StartTime = tick()
+            
+            repeat
+                Player.Character:PivotTo(Merchant:GetPivot())
+
+                RemoteEvents.Merchant:FireServer({
+                    Command = "SellAllTreasures",
+                    Merchant = Merchant
+                })
+
+                task.wait(0.1)
+                Teleported = true
+            until GetInventorySize() ~= PreviousSize or Flags.Sell.CurrentValue ~= SellEnabled or tick() - StartTime >= 3
+            
+            if Teleported then
+                Player.Character:PivotTo(PreviousPosition)
+            end
+        end
+
+        while Flags.Sell.CurrentValue and task.wait() do
+            if GetInventorySize() < Player:GetAttribute("MaxInventorySize") + 9 then
+                print("InventorySize:", GetInventorySize(), "Max:", Player:GetAttribute("MaxInventorySize") + 9)
+                continue
+            end
+
+            SellInventory()
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+local Section = Tabs.Shop:AddSection("Magnets")
+
+
+local magnetBoxAmount = 1 
+
+local Slider = Tabs.Shop:AddSlider("Slider",  
+{
+    Title = "Amount of Magnet Boxes",
+    Description = "",
+    Default = magnetBoxAmount,
+    Min = 1,
+    Max = 100,
+    Rounding = 0,  
+    Callback = function(value)
+        magnetBoxAmount = value
+    end
+})
+
+Tabs.Shop:AddButton({ 
+    Title = "Purchase Magnet Box(es)", 
+    Description = "", 
+    Callback = function()
+        RemoteFunctions.Shop:InvokeServer({
+            Command = "Buy",
+            Type = "Item",
+            Product = "Magnet Box",
+            Amount = magnetBoxAmount 
+        })
+    end
+})
+
+local Section = Tabs.Shop:AddSection("Shovel")
+
+
+local Dropdown = Tabs.Shop:AddDropdown("Purchase Shovel", { 
+    Title = "Purchase Shovel",
+    Description = "",
+    Values = Shovels, 
+    Multi = false, 
+    Default = nil, 
+    Callback = function(CurrentOption)
+        if not CurrentOption or CurrentOption == "" then
+            return 
+        end
+
+        RemoteFunctions.Shop:InvokeServer({
+            Command = "Buy",
+            Type = "Item",
+            Product = OriginalShovelNames[CurrentOption].Name,
+            Amount = 1
+        })
+
+
+    end,
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tabs.items:AddButton({
+    Title = `Quick Appraise Held Item`,
+    Description = "",
+    Callback = function()
+        RemoteFunctions.LootPit:InvokeServer({
+            Command = "AppraiseItem"
+        })
+    end
+})
+
+
+local CollectedRewards = {}
+
+local Flags = {
+    Salary = { CurrentValue = false }
+}
+
+local Toggle = Tabs.items:AddToggle("MyToggle", {
+    Title = "Auto Collect Salary Rewards",
+    Description = "It Will Appear As Unclaimed",
+    Default = false,
+    Callback = function(Value)
+        Flags.Salary.CurrentValue = Value
+        
+        while Flags.Salary.CurrentValue and task.wait() do
+            local TierTimers = RemoteFunctions.TimeRewards:InvokeServer({
+                Command = "GetSessionTimers"
+            })
+
+            for Tier, Timer in TierTimers do
+                if Timer ~= 0 then
+                    CollectedRewards[Tier] = false
+                    continue
+                end
+
+                if CollectedRewards[Tier] then
+                    continue
+                end
+
+                RemoteFunctions.TimeRewards:InvokeServer({
+                    Command = "RedeemTier",
+                    Tier = Tier
+                })
+
+                CollectedRewards[Tier] = true
+            end
+
+            task.wait(5)
+        end
+    end
+})
+
+
+
+
+
+local HideGui = false  
+
+local Toggle = Tabs.Misc:AddToggle("MyToggle",  
+{
+    Title = "Hide/Show UIs", 
+    Description = "",
+    Default = false,  
+    Callback = function(newState)
+        HideGui = newState  
+
+        for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                gui.Enabled = not HideGui 
+            end
+        end
+    end
+})
+
+for _, gui in pairs(game.Players.LocalPlayer.PlayerGui:GetChildren()) do
+    if gui:IsA("ScreenGui") then
+        gui.Enabled = not HideGui 
+    end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local Toggle = Tabs.Misc:AddToggle("MyToggle", 
+{
+    Title = "Freeze Character", 
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        local player = game:GetService("Players").LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            if state then
+                player.Character.HumanoidRootPart.Anchored = true
+                print("bro saw baddie and bro got Shocked.")
+            else
+                player.Character.HumanoidRootPart.Anchored = false
+                print("bro saw ugly ass and start moving.")
+            end
+        else
+            warn("Player or HumanoidRootPart not found!")
+        end
+    end
+})
+
+
+
+Tabs.Misc:AddButton({
+    Title = "Anti AFK",
+    Description = "",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hassanxzayn-lua/Anti-afk/main/antiafkbyhassanxzyn"))();
+	end
+})
+
+
+
+
+local DisableSwimmingToggle = Tabs.Misc:AddToggle("DisableSwimmingToggle", 
+{
+    Title = "Disable Swimming", 
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        local LocalPlayer = game.Players.LocalPlayer
+        local LocalCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+        if LocalCharacter and LocalCharacter:FindFirstChild("Humanoid") then
+            local Humanoid = LocalCharacter:FindFirstChild("Humanoid")
+            if Humanoid then
+                if state then
+                    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+                    print("bro why you stop swimming")
+                else
+                    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+                    print("bro start swimming")
+                end
+            end
+        else
+            warn("Humanoid not found!")
+        end
+    end
+})
+
+
+
+
+
+local BlackGui = Instance.new("ScreenGui")
+BlackGui.Name = "BlackGui"
+BlackGui.ResetOnSpawn = false
+local blackFrame = Instance.new("Frame")
+blackFrame.Name = "BlackFrame"
+blackFrame.Size = UDim2.new(1, 0, 1, 0)
+blackFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+blackFrame.BackgroundTransparency = 1
+blackFrame.Parent = BlackGui
+BlackGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local WhiteGui = Instance.new("ScreenGui")
+WhiteGui.Name = "WhiteGui"
+WhiteGui.ResetOnSpawn = false
+local whiteFrame = Instance.new("Frame")
+whiteFrame.Name = "WhiteFrame"
+whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+whiteFrame.BackgroundTransparency = 1
+whiteFrame.Parent = WhiteGui
+WhiteGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local BlackGui5 = Tabs.Misc:AddToggle("BlackGui5", {Title = "Black Screen", Default = false })
+BlackGui5:OnChanged(function()
+    local Black123 = BlackGui5.Value
+    if Black123 then
+        blackFrame.BackgroundTransparency = 0
+    else
+        blackFrame.BackgroundTransparency = 1
+    end
+end)
+
+local WhiteGui5 = Tabs.Misc:AddToggle("WhiteGui5", {Title = "White Screen", Default = false })
+WhiteGui5:OnChanged(function()
+    local White123 = WhiteGui5.Value
+    if White123 then
+        whiteFrame.BackgroundTransparency = 0 
+    else
+        whiteFrame.BackgroundTransparency = 1
+    end
+end)
+
+
+Tabs.Misc:AddButton({
+    Title = "Infiniteyield Reborn",
+    Description = "",
+    Callback = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/RyXeleron/infiniteyield-reborn/refs/heads/scriptblox/source"))()
+    end
+})
+
+
+
+
+local Section = Tabs.Misc:AddSection("Character")
+
+
+
+local TeleportToggle = Tabs.Misc:AddToggle("TeleportToggle", 
+{
+    Title = "T + Left Click Teleport", 
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        if not hasUserToggled and not isTeleportEnabled then
+            hasUserToggled = true
+            isTeleportEnabled = Value
+            return
+        end
+
+        isTeleportEnabled = Value
+        if Value then
+            if not connection then
+                connection = game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+                    if not gameProcessed and isTeleportEnabled and input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.T) then
+                            local player = game:GetService("Players").LocalPlayer
+                            local mouse = player:GetMouse()
+                            player.Character:MoveTo(Vector3.new(mouse.Hit.x, mouse.Hit.y, mouse.Hit.z))
+                        end
+                    end
+                end)
+            end
+        else
+            if connection then
+                connection:Disconnect()
+                connection = nil
+            end
+        end
+    end
+})
+
+
+local InfiniteJumpToggle = Tabs.Misc:AddToggle("InfiniteJumpToggle", 
+{
+    Title = "Infinite Jumps", 
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        _G.infinjump = Value
+    end
+})
+
+if not _G.infinJumpStarted then
+    _G.infinJumpStarted = true
+    _G.infinjump = false
+
+    local plr = game:GetService('Players').LocalPlayer
+    local m = plr:GetMouse()
+
+    m.KeyDown:Connect(function(key)
+        if _G.infinjump then
+            if key:byte() == 32 then
+                local humanoid = plr.Character and plr.Character:FindFirstChildOfClass('Humanoid')
+                if humanoid then
+                    humanoid:ChangeState('Jumping')
+                    wait()
+                    humanoid:ChangeState('Seated')
+                end
+            end
+        end
+    end)
+end
+
+
+
+local Noclip = nil
+local Clip = true
+
+function noclip()
+	Clip = false
+	local function Nocl()
+		if Clip == false and game.Players.LocalPlayer.Character ~= nil then
+			for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+				if v:IsA('BasePart') and v.CanCollide and v.Name ~= floatName then
+					v.CanCollide = false
+				end
+			end
+		end
+		wait(0.21)
+	end
+	Noclip = game:GetService('RunService').Stepped:Connect(Nocl)
+end
+
+function clip()
+	if Noclip then 
+		Noclip:Disconnect()
+	end
+	Clip = true
+	if game.Players.LocalPlayer.Character then
+		for _, v in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+			if v:IsA('BasePart') and v.CanCollide == false then
+				v.CanCollide = true
+			end
+		end
+	end
+end
+
+local Toggle = Tabs.Misc:AddToggle("MyToggle", {
+    Title = "Noclip",
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        if state then
+            noclip()
+        else
+            clip()
+        end
+    end
+})
+
+
+
+
+local Slider = Tabs.Misc:AddSlider("SpeedSlider", 
+{
+    Title = "WalkSpeed",
+    Description = "",
+    Default = 16,
+    Min = 16,
+    Max = 500,
+    Rounding = 1,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
+    end
+})
+
+local Slider = Tabs.Misc:AddSlider("JumpSlider", 
+{
+    Title = "Jump Power",
+    Description = "",
+    Default = 50,
+    Min = 50,
+    Max = 500,
+    Rounding = 1,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Value)
+    end
+})
+
+local runService = game:GetService("RunService")
+local event
+
+local Slider = Tabs.Misc:AddSlider("GravitySlider", 
+{
+    Title = "Gravity",
+    Description = "",
+    Default = 196,
+    Min = 0,
+    Max = 500,
+    Rounding = 1,
+    Callback = function(Value)
+        print("Gravity slider changed to:", Value)
+        if event then
+            event:Disconnect()
+        end
+        event = runService.RenderStepped:Connect(function()
+            workspace.Gravity = Value
+        end)
+    end
+})
+
+
+
+
+
+local Slider = Tabs.Misc:AddSlider("AssSlider", 
+{
+    Title = "HipHeight",
+    Description = "",
+    Default = 0,
+    Min = 0,
+    Max = 500,
+    Rounding = 1,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.HipHeight = Value
+    end
+})
+
+
+
+local Input = Tabs.Misc:AddInput("FOVInput", 
+{
+    Title = "Change FOV",
+    Description = "",
+    Default = "70",
+    Placeholder = "Enter FOV value",
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        local fov = tonumber(Value)
+        if fov then
+            game.Workspace.Camera.FieldOfView = fov
+            print("FOV set to:", fov)
+        else
+            warn("Invalid FOV value entered")
+        end
+    end
+})
+
+
+
+
+
+local selectedPosition = nil
+local teleporting = false
+
+local positionParagraph = Tabs.Main:AddParagraph({
+    Title = "Position :",
+    Content = ""
+})
+
+Tabs.Main:AddButton({
+    Title = "Select Position",
+    Description = "",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if not player then return end
+
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+
+        if humanoidRootPart then
+            local position = humanoidRootPart.Position
+            selectedPosition = CFrame.new(position) * humanoidRootPart.CFrame.Rotation
+            positionParagraph:SetTitle("Position : " .. 
+                tostring(math.floor(position.X)) .. " X " ..
+                tostring(math.floor(position.Y)) .. " Y " ..
+                tostring(math.floor(position.Z)) .. " Z")
+        else
+            positionParagraph:SetTitle("Error: Unable to find player position.")
+        end
+    end
+})
+
+Tabs.Main:AddToggle("MyToggle", {
+    Title = "Teleport to selected location",
+    Description = "",
+    Default = false,
+    Callback = function(state)
+        if state then
+            print("Toggle On")
+            teleporting = true
+            while teleporting do
+                local player = game.Players.LocalPlayer
+                if player and selectedPosition then
+                    local character = player.Character
+                    if character and character:FindFirstChild("HumanoidRootPart") then
+                        character.HumanoidRootPart.CFrame = selectedPosition
+                    end
+                end
+                task.wait()
+            end
+        else
+            print("Toggle Off")
+            teleporting = false
+        end
+    end
+})
+
+
+
+
+
+
+Flags = Flags or {}
+
+Flags.CreatePiles = Flags.CreatePiles or { CurrentValue = false }
+Flags.LegitPiles = Flags.LegitPiles or { CurrentValue = false }
+
+local CreatePilesToggle = Tabs.Main:AddToggle("CreatePilesToggle", {
+    Title = "Auto Create Piles on Any Terrain",
+    Description = "",
+    Default = false,
+    Callback = function(Value)    
+        Flags.CreatePiles.CurrentValue = Value 
+        while Flags.CreatePiles.CurrentValue and task.wait() do    
+            if Player:GetAttribute("PileCount") ~= 0 then
+                continue
+            end
+            
+            local PileInfo: {["PileIndex"]: number, ["Success"]: boolean} = RemoteFunctions.Digging:InvokeServer({
+                Command = "CreatePile"
+            })
+            
+            if PileInfo.Success then
+                RemoteEvents.Digging:FireServer({
+                    Command = "DigIntoSandSound"
+                })
+            end
+        end
+    end
+})
+
+
+
+
+
+
+local LegitPilesToggle = Tabs.Main:AddToggle("LegitPilesToggle", {
+    Title = "Auto Legit Create Piles",
+    Description = "Works with Legit Dig",
+    Default = false,
+    Callback = function(Value)    
+        Flags.LegitPiles.CurrentValue = Value 
+        while Flags.LegitPiles.CurrentValue and task.wait() do
+            local Tool = Player.Character:FindFirstChildOfClass("Tool")
+            
+            if not Tool or Tool:GetAttribute("Type") ~= "Shovel" then
+                continue
+            end
+            
+            local PileAdornee: Model? = Player.Character.Shovel.Highlight.Adornee
+
+            if PileAdornee and PileAdornee:GetAttribute("Blacklisted") then
+                continue
+            end
+            
+            Tool:Activate()
+        end
+    end
+})
+
+
+
+
+
+
+
+
+
+
+
+
+local Flags = Flags or {}  
+Flags.LegitDig = Flags.LegitDig or { CurrentValue = false } 
+
+local Toggle = Tabs.Main:AddToggle("DigToggle", {
+    Title = "Auto Fast Dig",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        while Value and task.wait() do
+            if not Player.Character:FindFirstChildOfClass("Tool") then
+                continue
+            end
+
+            local Adornee: Model? = Player.Character.Shovel.Highlight.Adornee
+
+            if not Adornee or Adornee.Parent ~= workspace.Map.TreasurePiles or Adornee:GetAttribute("Blacklisted") then
+                continue
+            end
+
+            RemoteFunctions.Digging:InvokeServer({
+                Command = "DigPile",
+                TargetPileIndex = Adornee:GetAttribute("PileIndex")
+            })
+        end
+    end
+})
+
+local function LegitDig()
+    if not Flags.LegitDig.CurrentValue then
+        return
+    end
+
+    local DigMinigame = Player.PlayerGui.Main:FindFirstChild("DigMinigame")
+
+    if not DigMinigame then
+        return
+    end
+
+    local Connection: RBXScriptConnection
+    Connection = game:GetService("RunService").Heartbeat:Connect(function()
+        local DigMinigame = Player.PlayerGui.Main:FindFirstChild("DigMinigame")
+
+        if not DigMinigame or not Flags.LegitDig.CurrentValue then
+            return Connection:Disconnect()
+        end
+
+        DigMinigame.Cursor.Position = DigMinigame.Area.Position
+    end)
+
+    HandleConnection(Connection, "LegitDigHeartbeat")
+end
+
+
+
+
+Tabs.Main:AddToggle("LegitDigToggle", {
+    Title = "Auto Legit Dig",
+    Description = "",
+    Default = false,
+    Callback = function(Value)
+        Flags.LegitDig.CurrentValue = Value  
+        if Value then
+            LegitDig()
+        end
+    end
+})
+
+
+
+
+HandleConnection(Player.PlayerGui.Main.ChildAdded:Connect(LegitDig), "LegitDig")
+
+
+
+
